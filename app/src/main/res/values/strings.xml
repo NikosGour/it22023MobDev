@@ -1,0 +1,7 @@
+<resources>
+    <string name="app_name">AndoidDev22023</string>
+    <string name="select_boundaries">Select Boundries</string>
+    <string name="stop_searching">Stop Searching</string>
+    <string name="see_boundaries">See Boundaries</string>
+    <string name="title_activity_map">MapActivity</string>
+</resources>
