@@ -29,14 +29,13 @@ public class LocationListener implements android.location.LocationListener
         this.cur_location    = getLastKnownLocation();
         
         
-        // Dokimasa 200 pragmata gia na to kano na doulepsi , tipota den doulepse
-        // pano kato to null einai provilma mono se enan emulator o opoios den exei data
-        // opote den exei kai kanena previous known location opote i lisi einai Hardcode :),
-        // den mou aresei alla thelo na doylevei se kathe case.
-        // tha ithela para polu na mou steilete ena email (it22023@hua.gr) gia na sizitisoume
-        // pos tha mporouse na lithei to provlima
-        // !!!!PS!!!! : grafo Greeklish gt den ksero ama meso tou compression tou Eclass ama tha mporei
-        // na kodikopithoun ta ellinika
+        /* Δοκιμασα 200 πραγματα για να το κανω να δουλεψει , τιποτα δεν δουλεψε
+         * πανω κατω το null ειναι προβλημα μονο σε εναν emulator ο οποιος δεν εχει data
+         * οποτε δεν εχει και κανενα previous known location οποτε η λυση ειναι Hardcode :),
+         * δεν μου αρεσει αλλα θελω να δουλεβει σε καθε περιπτωση.
+         * θα ηθελα πολυ να μου στειλετε ενα email (it22023@hua.gr) για να συζητησουμε
+         * πως θα μπορουσε να λυθει το προβλημα
+         */
         if (cur_location == null)
         {
             Location l = new Location("");

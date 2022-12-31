@@ -5,11 +5,19 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.content.ContextCompat;
 
 import android.Manifest;
+import android.annotation.SuppressLint;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.location.Location;
+import android.location.LocationRequest;
+import android.os.Build;
 import android.os.Bundle;
 import android.util.Log;
 import android.widget.Button;
+
+import com.google.android.gms.location.FusedLocationProviderClient;
+import com.google.android.gms.location.LocationServices;
+import com.google.android.gms.location.Priority;
 
 import java.util.logging.Logger;
 
@@ -18,6 +26,7 @@ public class MainActivity extends AppCompatActivity
     
     Button select_boundaries, stop_searching, see_boundaries;
     
+    @SuppressLint("MissingPermission")
     @Override
     protected void onCreate(Bundle savedInstanceState)
     {
@@ -26,6 +35,10 @@ public class MainActivity extends AppCompatActivity
         select_boundaries = findViewById(R.id.selectBoundariesButton);
         stop_searching    = findViewById(R.id.stopSearchingButton);
         see_boundaries    = findViewById(R.id.seeBoundariesButton);
+    
+    
+        FusedLocationProviderClient
+                fusedLocationProviderClient = LocationServices.getFusedLocationProviderClient(this);
         
         select_boundaries.setOnClickListener(view -> {
 //            int[] permission =
@@ -43,8 +56,30 @@ public class MainActivity extends AppCompatActivity
             
         });
         
-        stop_searching.setOnClickListener(view -> Logger.getAnonymousLogger().severe("Stop Searching"));
-        see_boundaries.setOnClickListener(view -> Logger.getAnonymousLogger().severe("See Boundaries"));
+        stop_searching.setOnClickListener(view ->
+                                          {
+                                              Log.e("MainActivity" , MapActivity.locationService.isGPSEnabled() + "");
+                                          });
+        see_boundaries.setOnClickListener(view ->
+                                          {
+                                              if (android.os.Build.VERSION.SDK_INT >= Build.VERSION_CODES.S)
+                                              {
+                                                  LocationRequest builder = new LocationRequest.Builder(5000)
+                                                          .setMinUpdateDistanceMeters(0)
+                                                          .setMinUpdateIntervalMillis(5000)
+                                                          .build();
+                                              }
+    
+                                              if (ContextCompat.checkSelfPermission(this , Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED)
+                                              {
+                                                  fusedLocationProviderClient.getLastLocation().addOnSuccessListener(location -> {
+                                                      if (location != null)
+                                                      {
+                                                          Log.e("MainActivity" , location.getLatitude() + " " + location.getLongitude());
+                                                      }
+                                                  });
+                                              }
+                                          });
         
         
     }
