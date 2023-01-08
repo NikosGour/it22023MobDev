@@ -2,22 +2,47 @@ package gr.hua.dit.nikosgourn.andoiddev22023;
 
 import static android.location.LocationManager.GPS_PROVIDER;
 
+import android.Manifest;
 import android.annotation.SuppressLint;
+import android.app.Notification;
+import android.app.NotificationChannel;
+import android.app.NotificationManager;
+import android.app.PendingIntent;
 import android.app.Service;
 import android.content.Context;
 import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.graphics.Color;
 import android.location.Location;
+import android.location.LocationListener;
 import android.location.LocationManager;
 import android.os.Binder;
+import android.os.Build;
 import android.os.IBinder;
+import android.os.Looper;
+import android.util.Log;
+import android.widget.Toast;
 
+import androidx.annotation.NonNull;
+import androidx.annotation.RequiresApi;
+import androidx.core.content.ContextCompat;
+
+import com.google.android.gms.location.FusedLocationProviderClient;
+import com.google.android.gms.location.LocationCallback;
+import com.google.android.gms.location.LocationRequest;
+import com.google.android.gms.location.LocationResult;
+import com.google.android.gms.location.LocationServices;
+import com.google.android.gms.location.Priority;
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.model.Circle;
 import com.google.android.gms.maps.model.CircleOptions;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.MarkerOptions;
+import com.google.android.gms.tasks.Tasks;
+
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Executor;
 
 public class LocationService extends Service
 {
@@ -30,17 +55,86 @@ public class LocationService extends Service
         }
     }
     
-    private IBinder          binder;
-    private LocationListener locationListener;
-    private LocationManager  locationManager;
-    private GoogleMap        mMap;
+    private static final String                      TAG = "LocationService";
+    private              IBinder                     binder;
+    private              LocationManager             locationManager;
+    private              LocationCallback            locationCallback;
+    private              FusedLocationProviderClient fusedLocationProviderClient;
+    private              LocationRequest             locationRequest;
+    private              Thread                      thread;
     
     @Override
     public void onCreate()
     {
         super.onCreate();
-        binder = new LocationBinder();
+        binder                      = new LocationBinder();
+        fusedLocationProviderClient = LocationServices.getFusedLocationProviderClient(this);
+        
+        var builder = new LocationRequest.Builder(Constants.MIN_TIME_INTERVAL_MILLIS);
+        builder.setMinUpdateDistanceMeters(Constants.MIN_DISTANCE_METERS);
+        builder.setMinUpdateIntervalMillis(Constants.MIN_TIME_INTERVAL_MILLIS);
+        builder.setPriority(Priority.PRIORITY_HIGH_ACCURACY);
+        
+        locationRequest = builder.build();
+        
+        locationCallback = new LocationCallback()
+        {
+            
+            @Override
+            public void onLocationResult(@NonNull LocationResult locationResult)
+            {
+                super.onLocationResult(locationResult);
+                Log.e("LocationResult" , locationResult.toString());
+            }
+        };
     }
+    
+    
+    @RequiresApi(api = Build.VERSION_CODES.O)
+    @SuppressLint("MissingPermission")
+    @Override
+    public int onStartCommand(Intent intent , int flags , int startId)
+    {
+//
+//        LocationManager locationManager =
+//                (LocationManager) getSystemService(Context.LOCATION_SERVICE);
+//        locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER , 1000 , 0 , location -> Log.e(TAG ,
+//                                                                                                           "onLocationChanged: " + location));
+        
+        fusedLocationProviderClient.requestLocationUpdates(locationRequest , locationCallback , Looper.getMainLooper());
+        Intent notificationIntent = new Intent(this, LocationService.class);
+        PendingIntent pendingIntent =
+                PendingIntent.getActivity(this, 0, notificationIntent,
+                                          PendingIntent.FLAG_IMMUTABLE);
+    
+    
+        NotificationManager notificationManager =
+                (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
+        notificationManager.createNotificationChannel(new NotificationChannel("nikos" , "LocationService" , NotificationManager.IMPORTANCE_DEFAULT));
+        
+        Notification notification =
+                new Notification.Builder(this, "nikos")
+                        .setContentTitle("Location Service")
+                        .setContentText("Location Service is running")
+                        .setSmallIcon(R.drawable.ic_launcher_foreground)
+                        .setContentIntent(pendingIntent)
+                        .setTicker("Location Service is running!!!")
+                        .build();
+    
+        // Notification ID cannot be 0.
+        startForeground(69, notification);
+        
+        return super.onStartCommand(intent , flags , startId);
+    }
+    
+    @Override
+    public void onDestroy()
+    {
+        Log.d(TAG , "Stopping Location Service");
+        fusedLocationProviderClient.removeLocationUpdates(locationCallback);
+        super.onDestroy();
+    }
+    
     
     @Override
     public IBinder onBind(Intent intent)
@@ -51,48 +145,8 @@ public class LocationService extends Service
     @Override
     public boolean onUnbind(Intent intent)
     {
-        mMap = null;
+        
         return super.onUnbind(intent);
-    }
-    
-    @SuppressLint("MissingPermission")
-    @Override
-    public int onStartCommand(Intent intent , int flags , int startId)
-    {
-        mMap = MapActivity.mMap;
-        
-        
-        if (! isGPSEnabled())
-        {
-        }
-        locationListener = new LocationListener(locationManager , mMap);
-        locationManager.requestLocationUpdates(GPS_PROVIDER , 5000 , 50 , locationListener);
-        
-        Location location = getLocation();
-    
-        Circle c =
-                mMap.addCircle(new CircleOptions().center(new LatLng(location.getLatitude() , location.getLongitude())).radius(100).strokeColor(Color.RED).strokeWidth(20));
-        LatLng location_LatLng = new LatLng(location.getLatitude() , location.getLongitude());
-        mMap.addMarker(new MarkerOptions().position(location_LatLng).title("Marker in current location"));
-        mMap.moveCamera(CameraUpdateFactory.zoomTo(15));
-        mMap.moveCamera(CameraUpdateFactory.newLatLng(location_LatLng));
-        
-        
-        return super.onStartCommand(intent , flags , startId);
-    }
-    
-    public boolean isGPSEnabled()
-    {
-        if (locationManager == null)
-        {
-            locationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
-        }
-        return locationManager.isProviderEnabled(GPS_PROVIDER);
-    }
-    
-    public Location getLocation()
-    {
-        return locationListener.getCur_location();
     }
     
 }
