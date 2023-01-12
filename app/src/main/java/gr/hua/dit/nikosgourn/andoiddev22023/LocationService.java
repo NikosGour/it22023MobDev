@@ -55,38 +55,31 @@ public class LocationService extends Service
         }
     }
     
-    private static final String                      TAG = "LocationService";
-    private              IBinder                     binder;
-    private              LocationManager             locationManager;
-    private              LocationCallback            locationCallback;
-    private              FusedLocationProviderClient fusedLocationProviderClient;
-    private              LocationRequest             locationRequest;
-    private              Thread                      thread;
+    static class LocationListener implements android.location.LocationListener
+    {
+        
+        @Override
+        public void onLocationChanged(@NonNull Location location)
+        {
+            Log.e(TAG , "onLocationChanged: " + location);
+            
+            
+        }
+    }
+    
+    private static final String                           TAG = "LocationService";
+    private              IBinder                          binder;
+    private              LocationManager                  locationManager;
+    private              LocationService.LocationListener locationListener;
     
     @Override
     public void onCreate()
     {
         super.onCreate();
-        binder                      = new LocationBinder();
-        fusedLocationProviderClient = LocationServices.getFusedLocationProviderClient(this);
+        binder           = new LocationBinder();
+        locationListener = new LocationService.LocationListener();
+        locationManager  = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
         
-        var builder = new LocationRequest.Builder(Constants.MIN_TIME_INTERVAL_MILLIS);
-        builder.setMinUpdateDistanceMeters(Constants.MIN_DISTANCE_METERS);
-        builder.setMinUpdateIntervalMillis(Constants.MIN_TIME_INTERVAL_MILLIS);
-        builder.setPriority(Priority.PRIORITY_HIGH_ACCURACY);
-        
-        locationRequest = builder.build();
-        
-        locationCallback = new LocationCallback()
-        {
-            
-            @Override
-            public void onLocationResult(@NonNull LocationResult locationResult)
-            {
-                super.onLocationResult(locationResult);
-                Log.e("LocationResult" , locationResult.toString());
-            }
-        };
     }
     
     
@@ -95,38 +88,41 @@ public class LocationService extends Service
     @Override
     public int onStartCommand(Intent intent , int flags , int startId)
     {
-//
-        LocationManager locationManager =
-                (LocationManager) getSystemService(Context.LOCATION_SERVICE);
-        locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER , 1000 , 0 , location -> Log.e(TAG ,
-                                                                                                           "onLocationChanged: " + location));
-//
-//        fusedLocationProviderClient.requestLocationUpdates(locationRequest , locationCallback , Looper.getMainLooper());
         
-        NotificationManager notificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
-        NotificationChannel  notificationChannel = new NotificationChannel("LocationService" , "My Location Service" ,
-                                                                           NotificationManager.IMPORTANCE_DEFAULT);
+        
+        locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER , Constants.MIN_TIME_INTERVAL_MILLIS , Constants.MIN_DISTANCE_METERS , locationListener);
+        
+        startForeground(1 , createDummyNotification());
+        return super.onStartCommand(intent , flags , startId);
+    }
+    
+    
+    @RequiresApi(api = Build.VERSION_CODES.Q)
+    private Notification createDummyNotification()
+    {
+        NotificationManager notificationManager =
+                (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
+        NotificationChannel notificationChannel =
+                new NotificationChannel("LocationService" , "My Location Service" , NotificationManager.IMPORTANCE_DEFAULT);
         
         notificationManager.createNotificationChannel(notificationChannel);
-        PendingIntent pendingIntent = PendingIntent.getActivity(this , 0 , new Intent(this , MainActivity.class) , PendingIntent.FLAG_IMMUTABLE);
-        Notification   notification = new Notification.Builder(this , "LocationService")
+        PendingIntent pendingIntent =
+                PendingIntent.getActivity(this , 0 , new Intent(this , MainActivity.class) , PendingIntent.FLAG_IMMUTABLE);
+        
+        return new Notification.Builder(this , "LocationService")
                 .setContentTitle("Location Service")
                 .setContentText("Location Service is running")
                 .setSmallIcon(R.drawable.ic_launcher_foreground)
-                .setContentIntent(pendingIntent)
-                .build();
-        startForeground(1 , notification);
-        return super.onStartCommand(intent , flags , startId);
+                .setContentIntent(pendingIntent).build();
     }
     
     @Override
     public void onDestroy()
     {
         Log.d(TAG , "Stopping Location Service");
-        fusedLocationProviderClient.removeLocationUpdates(locationCallback);
+        locationManager.removeUpdates(locationListener);
         super.onDestroy();
     }
-    
     
     
     @Override

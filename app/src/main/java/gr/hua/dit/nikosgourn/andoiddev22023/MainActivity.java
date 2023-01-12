@@ -74,36 +74,18 @@ public class MainActivity extends AppCompatActivity
         registerReceiver(broadcastReceiver , intentFilter);
         
         locationServiceIntent = new Intent(this , LocationService.class);
-        
-        
         requestPermissions();
         
         
         select_boundaries.setOnClickListener(view -> {
-            //            int[] permission =
-            //                    new int[]{ ContextCompat.checkSelfPermission(this , Manifest.permission.ACCESS_FINE_LOCATION) , ContextCompat.checkSelfPermission(this , Manifest.permission.ACCESS_COARSE_LOCATION) };
-            //
-            //            if (permission[0] == PackageManager.PERMISSION_DENIED ||
-            //                permission[1] != PackageManager.PERMISSION_DENIED)
-            //            {
-            //
-            //                requestPermissions(new String[]{ Manifest.permission.ACCESS_FINE_LOCATION , Manifest.permission.ACCESS_COARSE_LOCATION } , 22023);
-            //            } else
-            //            {
-            
-            
-            //            }
-            
-            
             startActivity(new Intent(this , MapActivity.class));
-            
         });
-        
         
         stop_searching.setOnClickListener(view -> {
             Intent locationServiceIntent = new Intent(this , LocationService.class);
             stopService(locationServiceIntent);
         });
+        
         see_boundaries.setOnClickListener(view -> {
         
         
@@ -138,13 +120,14 @@ public class MainActivity extends AppCompatActivity
                 if (grantResults[0] == PackageManager.PERMISSION_GRANTED)
                 {
                     requestPermissions();
-                }
-                else
+                } else
                 {
-                    var snackbar = Snackbar.make(findViewById(android.R.id.content) , "Background Location permissions are required, please go to Settings -> Apps and change the location permission to 'Always'" , Snackbar.LENGTH_LONG);
+                    var snackbar =
+                            Snackbar.make(findViewById(android.R.id.content) , "Background Location permissions are required, please go to Settings -> Apps and change the location permission to 'Always'" , Snackbar.LENGTH_LONG);
                     View snackbarView = snackbar.getView();
-                    TextView sbTV = (TextView) (snackbarView.findViewById(com.google.android.material.R.id.snackbar_text));
-                    sbTV.setMaxLines(3);
+                    TextView snackbarTextView =
+                            (TextView) (snackbarView.findViewById(com.google.android.material.R.id.snackbar_text));
+                    snackbarTextView.setMaxLines(3);
                     snackbar.show();
                 }
                 return;
@@ -165,7 +148,7 @@ public class MainActivity extends AppCompatActivity
             requestPermissions(new String[]{ Manifest.permission.ACCESS_FINE_LOCATION } , REQUEST_CODE);
             return;
         }
-
+        
         if (permission[1] == PackageManager.PERMISSION_DENIED)
         {
             requestPermissions(new String[]{ Manifest.permission.ACCESS_BACKGROUND_LOCATION } , REQUEST_CODE);

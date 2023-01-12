@@ -1,84 +1,188 @@
 package gr.hua.dit.nikosgourn.andoiddev22023;
 
-import static android.location.LocationManager.GPS_PROVIDER;
-
-import android.Manifest;
 import android.annotation.SuppressLint;
-import android.app.Service;
-import android.content.ComponentName;
-import android.content.Context;
-import android.content.Intent;
-import android.content.ServiceConnection;
-import android.content.pm.PackageManager;
 import android.graphics.Color;
-import android.location.Location;
-import android.location.LocationManager;
+import android.os.Build;
 import android.os.Bundle;
-import android.os.IBinder;
-import android.os.Parcelable;
 import android.util.Log;
-import android.widget.Toast;
+import android.widget.Button;
 
-import androidx.annotation.NonNull;
-import androidx.core.content.ContextCompat;
+import androidx.annotation.RequiresApi;
 import androidx.fragment.app.FragmentActivity;
 
-import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
-import com.google.android.gms.maps.internal.IGoogleMapDelegate;
 import com.google.android.gms.maps.model.Circle;
 import com.google.android.gms.maps.model.CircleOptions;
 import com.google.android.gms.maps.model.LatLng;
+import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
-import com.google.android.material.snackbar.Snackbar;
 
-import java.io.Serializable;
+import java.util.AbstractMap;
+import java.util.ArrayList;
 
 import gr.hua.dit.nikosgourn.andoiddev22023.databinding.ActivityMapBinding;
+import kotlin.NotImplementedError;
 
 
 public class MapActivity extends FragmentActivity implements OnMapReadyCallback
 {
-    private static final String             TAG          = "MapActivity";
-    public static        GoogleMap          mMap;
-    private              ActivityMapBinding binding;
-
-
-   
+    private static final String               TAG = "MapActivity";
+    public static        GoogleMap            mMap;
+    private              ActivityMapBinding   binding;
+    private              ArrayList<PointBlob> points;
+    private Button startButton;
+    private Button cancelButton;
     
-  
+    
+    private static class PointBlob
+    {
+        public Marker marker;
+        public Circle circle;
+        public LatLng Cords;
+    }
+    
     
     @Override
     protected void onCreate(Bundle savedInstanceState)
     {
         super.onCreate(savedInstanceState);
-        
+        points  = new ArrayList<>();
         binding = ActivityMapBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
         
+        startButton = findViewById(R.id.start_button);
+        cancelButton = findViewById(R.id.cancel_button);
         
-
+        startButton.setOnClickListener(v -> {
+            Log.d(TAG , "onCreate: " + "Start Button Clicked");
+            throw new NotImplementedError();
+        });
         
-    }
-    
-    private void main()
-    {
+        cancelButton.setOnClickListener(v -> {
+            Log.d(TAG , "onCreate: " + "Cancel Button Clicked");
+            finish();
+            
+        });
         
         
-        // Obtain the SupportMapFragment and get notified when the map is ready to be used.
         SupportMapFragment mapFragment =
                 (SupportMapFragment) getSupportFragmentManager().findFragmentById(R.id.map);
         mapFragment.getMapAsync(this);
+        
+        
     }
     
     
+    @RequiresApi(api = Build.VERSION_CODES.N)
+    public AbstractMap.SimpleEntry<PointBlob, Double> distanceFromPoint(LatLng latLng)
+    {
+        final double EARTH_RADIUS = 6371e3;
+        Log.w(TAG , "distanceFromPoint: " + EARTH_RADIUS);
+        if (points.size() == 0)
+        {
+            return null;
+        }
+        
+        for (PointBlob blob : points)
+        {
+            LatLng point = blob.Cords;
+            
+            double lat1 = Math.toRadians(point.latitude);
+            double lat2 = Math.toRadians(latLng.latitude);
+            double lon1 = Math.toRadians(point.longitude);
+            double lon2 = Math.toRadians(latLng.longitude);
+            double dLat = lat2 - lat1;
+            double dLon = lon2 - lon1;
+            
+            double a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+                       Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLon / 2) * Math.sin(dLon / 2);
+            double c = 2 * Math.atan2(Math.sqrt(a) , Math.sqrt(1 - a));
+            double d = EARTH_RADIUS * c;
+            Log.w(TAG , "distanceFromPoint: " + d);
+            
+            if (d < 50)
+            {
+                return new AbstractMap.SimpleEntry<>(blob , d);
+            }
+        }
+        
+        return null;
+    }
+    
+    @RequiresApi(api = Build.VERSION_CODES.N)
     @SuppressLint("MissingPermission")
     @Override
     public void onMapReady(GoogleMap googleMap)
     {
         mMap = googleMap;
+        mMap.setMyLocationEnabled(true);
+        mMap.getUiSettings().setMyLocationButtonEnabled(true);
+        mMap.getUiSettings().setZoomControlsEnabled(true);
+        mMap.getUiSettings().setCompassEnabled(true);
+        mMap.getUiSettings().setZoomGesturesEnabled(true);
+        
+        
+        
+        
+        //zoom in on current location
+        
+        
+        mMap.setOnMapLongClickListener(latLng -> {
+            
+            if (points.size() == 0)
+            {
+                
+                Marker marker = mMap.addMarker(new MarkerOptions().position(latLng));
+                Circle circle =
+                        mMap.addCircle(new CircleOptions().center(latLng).radius(50).visible(true).strokeColor(Color.RED));
+                
+                PointBlob blob = new PointBlob();
+                blob.marker = marker;
+                blob.circle = circle;
+                blob.Cords  = latLng;
+                
+                
+                points.add(blob);
+            } else
+            {
+                AbstractMap.SimpleEntry<PointBlob, Double> distance_point =
+                        distanceFromPoint(latLng);
+                if (distance_point != null)
+                {
+                    
+                    PointBlob blob = distance_point.getKey();
+                    LatLng point = (LatLng) distance_point.getKey().Cords;
+                    double distance = (double) distance_point.getValue();
+                    
+                    Log.w(TAG , "Distance from point: " +
+                                point.latitude +
+                                " " +
+                                point.longitude +
+                                " is: " +
+                                distance);
+                    
+                    blob.marker.remove();
+                    blob.circle.remove();
+                    points.remove(blob);
+                    
+                } else
+                {
+                    Marker marker = mMap.addMarker(new MarkerOptions().position(latLng));
+                    Circle circle =
+                            mMap.addCircle(new CircleOptions().center(latLng).radius(50).visible(true).strokeColor(Color.RED));
+                    
+                    PointBlob blob = new PointBlob();
+                    blob.marker = marker;
+                    blob.circle = circle;
+                    blob.Cords  = latLng;
+                    points.add(blob);
+                }
+            }
+            
+            
+        });
         
         // Add a marker in Sydney and move the camera
         //        LatLng sydney = new LatLng(- 34 , 151);
@@ -101,14 +205,8 @@ public class MapActivity extends FragmentActivity implements OnMapReadyCallback
         //        mMap.moveCamera(CameraUpdateFactory.newLatLng(location_LatLng));
         
         
-       
-        
-        
     }
     
     
-
-    
- 
 }
 
