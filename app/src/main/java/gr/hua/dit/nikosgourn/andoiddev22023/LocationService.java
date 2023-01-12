@@ -90,40 +90,32 @@ public class LocationService extends Service
     }
     
     
-    @RequiresApi(api = Build.VERSION_CODES.O)
+    @RequiresApi(api = Build.VERSION_CODES.Q)
     @SuppressLint("MissingPermission")
     @Override
     public int onStartCommand(Intent intent , int flags , int startId)
     {
 //
-//        LocationManager locationManager =
-//                (LocationManager) getSystemService(Context.LOCATION_SERVICE);
-//        locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER , 1000 , 0 , location -> Log.e(TAG ,
-//                                                                                                           "onLocationChanged: " + location));
+        LocationManager locationManager =
+                (LocationManager) getSystemService(Context.LOCATION_SERVICE);
+        locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER , 1000 , 0 , location -> Log.e(TAG ,
+                                                                                                           "onLocationChanged: " + location));
+//
+//        fusedLocationProviderClient.requestLocationUpdates(locationRequest , locationCallback , Looper.getMainLooper());
         
-        fusedLocationProviderClient.requestLocationUpdates(locationRequest , locationCallback , Looper.getMainLooper());
-        Intent notificationIntent = new Intent(this, LocationService.class);
-        PendingIntent pendingIntent =
-                PendingIntent.getActivity(this, 0, notificationIntent,
-                                          PendingIntent.FLAG_IMMUTABLE);
-    
-    
-        NotificationManager notificationManager =
-                (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
-        notificationManager.createNotificationChannel(new NotificationChannel("nikos" , "LocationService" , NotificationManager.IMPORTANCE_DEFAULT));
+        NotificationManager notificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
+        NotificationChannel  notificationChannel = new NotificationChannel("LocationService" , "My Location Service" ,
+                                                                           NotificationManager.IMPORTANCE_DEFAULT);
         
-        Notification notification =
-                new Notification.Builder(this, "nikos")
-                        .setContentTitle("Location Service")
-                        .setContentText("Location Service is running")
-                        .setSmallIcon(R.drawable.ic_launcher_foreground)
-                        .setContentIntent(pendingIntent)
-                        .setTicker("Location Service is running!!!")
-                        .build();
-    
-        // Notification ID cannot be 0.
-        startForeground(69, notification);
-        
+        notificationManager.createNotificationChannel(notificationChannel);
+        PendingIntent pendingIntent = PendingIntent.getActivity(this , 0 , new Intent(this , MainActivity.class) , PendingIntent.FLAG_IMMUTABLE);
+        Notification   notification = new Notification.Builder(this , "LocationService")
+                .setContentTitle("Location Service")
+                .setContentText("Location Service is running")
+                .setSmallIcon(R.drawable.ic_launcher_foreground)
+                .setContentIntent(pendingIntent)
+                .build();
+        startForeground(1 , notification);
         return super.onStartCommand(intent , flags , startId);
     }
     
@@ -134,6 +126,7 @@ public class LocationService extends Service
         fusedLocationProviderClient.removeLocationUpdates(locationCallback);
         super.onDestroy();
     }
+    
     
     
     @Override

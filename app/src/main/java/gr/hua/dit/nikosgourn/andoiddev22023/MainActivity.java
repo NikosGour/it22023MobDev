@@ -2,7 +2,6 @@ package gr.hua.dit.nikosgourn.andoiddev22023;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.RequiresApi;
-import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.content.ContextCompat;
 
@@ -20,18 +19,12 @@ import android.location.LocationManager;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.IBinder;
-import android.os.Looper;
 import android.util.Log;
+import android.view.View;
 import android.widget.Button;
+import android.widget.TextView;
 import android.widget.Toast;
 
-import com.google.android.gms.location.FusedLocationProviderClient;
-import com.google.android.gms.location.LocationAvailability;
-import com.google.android.gms.location.LocationCallback;
-import com.google.android.gms.location.LocationRequest;
-import com.google.android.gms.location.LocationResult;
-import com.google.android.gms.location.LocationServices;
-import com.google.android.gms.location.Priority;
 import com.google.android.material.snackbar.Snackbar;
 
 @RequiresApi(api = Build.VERSION_CODES.Q)
@@ -40,7 +33,7 @@ public class MainActivity extends AppCompatActivity
     private static final String   TAG          = "MainActivity";
     private static final int      REQUEST_CODE = 22023;
     private static final String[] PERMISSIONS  =
-            new String[]{ Manifest.permission.ACCESS_FINE_LOCATION , Manifest.permission.ACCESS_COARSE_LOCATION , Manifest.permission.ACCESS_BACKGROUND_LOCATION };
+            new String[]{ Manifest.permission.ACCESS_FINE_LOCATION , Manifest.permission.ACCESS_BACKGROUND_LOCATION };
     
     private LocationService locationService;
     private boolean         isBound;
@@ -82,19 +75,8 @@ public class MainActivity extends AppCompatActivity
         
         locationServiceIntent = new Intent(this , LocationService.class);
         
-        int[] permission =
-                new int[]{ ContextCompat.checkSelfPermission(this , Manifest.permission.ACCESS_FINE_LOCATION) , ContextCompat.checkSelfPermission(this , Manifest.permission.ACCESS_COARSE_LOCATION) , ContextCompat.checkSelfPermission(this , Manifest.permission.ACCESS_BACKGROUND_LOCATION) };
         
-        if (permission[0] == PackageManager.PERMISSION_DENIED ||
-            permission[1] == PackageManager.PERMISSION_DENIED ||
-            permission[2] == PackageManager.PERMISSION_DENIED)
-        {
-            requestPermissions(PERMISSIONS , REQUEST_CODE);
-        } else
-        {
-            startService(locationServiceIntent);
-            bindService(locationServiceIntent , locationServiceConnection , Context.BIND_AUTO_CREATE);
-        }
+        requestPermissions();
         
         
         select_boundaries.setOnClickListener(view -> {
@@ -136,18 +118,63 @@ public class MainActivity extends AppCompatActivity
     {
         super.onRequestPermissionsResult(requestCode , permissions , grantResults);
         
-        if (requestCode == REQUEST_CODE &&
-            grantResults[0] == PackageManager.PERMISSION_GRANTED &&
-            grantResults[1] == PackageManager.PERMISSION_GRANTED &&
-            grantResults[2] == PackageManager.PERMISSION_GRANTED)
+        
+        if (requestCode == REQUEST_CODE)
         {
-            startForegroundService(locationServiceIntent);
-            bindService(locationServiceIntent , locationServiceConnection , Context.BIND_AUTO_CREATE);
-        } else
-        {
-            Log.e(TAG , "onRequestPermissionsResult: Permission Denied");
-            Snackbar.make(findViewById(android.R.id.content) , "Location permissions are required, please go to Settings -> Apps and change the permissions" , Snackbar.LENGTH_LONG).show();
+            
+            if (permissions[0].equals(Manifest.permission.ACCESS_FINE_LOCATION))
+            {
+                Log.e(TAG , "Permission" + permissions[0] + " was " + grantResults[0]);
+                
+                requestPermissions();
+                return;
+            }
+            
+            
+            if (permissions[0].equals(Manifest.permission.ACCESS_BACKGROUND_LOCATION))
+            {
+                Log.e(TAG , "Permission" + permissions[0] + " was " + grantResults[0]);
+                
+                if (grantResults[0] == PackageManager.PERMISSION_GRANTED)
+                {
+                    requestPermissions();
+                }
+                else
+                {
+                    var snackbar = Snackbar.make(findViewById(android.R.id.content) , "Background Location permissions are required, please go to Settings -> Apps and change the location permission to 'Always'" , Snackbar.LENGTH_LONG);
+                    View snackbarView = snackbar.getView();
+                    TextView sbTV = (TextView) (snackbarView.findViewById(com.google.android.material.R.id.snackbar_text));
+                    sbTV.setMaxLines(3);
+                    snackbar.show();
+                }
+                return;
+                
+            }
+            
         }
+    }
+    
+    private void requestPermissions()
+    {
+        int[] permission =
+                new int[]{ ContextCompat.checkSelfPermission(this , Manifest.permission.ACCESS_FINE_LOCATION) , ContextCompat.checkSelfPermission(this , Manifest.permission.ACCESS_BACKGROUND_LOCATION) };
+        
+        
+        if (permission[0] == PackageManager.PERMISSION_DENIED)
+        {
+            requestPermissions(new String[]{ Manifest.permission.ACCESS_FINE_LOCATION } , REQUEST_CODE);
+            return;
+        }
+
+        if (permission[1] == PackageManager.PERMISSION_DENIED)
+        {
+            requestPermissions(new String[]{ Manifest.permission.ACCESS_BACKGROUND_LOCATION } , REQUEST_CODE);
+            return;
+        }
+        
+        startForegroundService(locationServiceIntent);
+        bindService(locationServiceIntent , locationServiceConnection , Context.BIND_AUTO_CREATE);
+        
     }
     
     @Override
