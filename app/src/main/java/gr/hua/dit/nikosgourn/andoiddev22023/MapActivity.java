@@ -40,7 +40,7 @@ public class MapActivity extends FragmentActivity implements OnMapReadyCallback
     {
         public Marker marker;
         public Circle circle;
-        public LatLng Cords;
+        public LatLng cords;
     }
     
     
@@ -87,7 +87,7 @@ public class MapActivity extends FragmentActivity implements OnMapReadyCallback
         
         for (PointBlob blob : points)
         {
-            LatLng point = blob.Cords;
+            LatLng point = blob.cords;
             
             double lat1 = Math.toRadians(point.latitude);
             double lat2 = Math.toRadians(latLng.latitude);
@@ -141,7 +141,7 @@ public class MapActivity extends FragmentActivity implements OnMapReadyCallback
                 PointBlob blob = new PointBlob();
                 blob.marker = marker;
                 blob.circle = circle;
-                blob.Cords  = latLng;
+                blob.cords  = latLng;
                 
                 
                 points.add(blob);
@@ -153,7 +153,7 @@ public class MapActivity extends FragmentActivity implements OnMapReadyCallback
                 {
                     
                     PointBlob blob = distance_point.getKey();
-                    LatLng point = (LatLng) distance_point.getKey().Cords;
+                    LatLng point = (LatLng) distance_point.getKey().cords;
                     double distance = (double) distance_point.getValue();
                     
                     Log.w(TAG , "Distance from point: " +
@@ -176,7 +176,7 @@ public class MapActivity extends FragmentActivity implements OnMapReadyCallback
                     PointBlob blob = new PointBlob();
                     blob.marker = marker;
                     blob.circle = circle;
-                    blob.Cords  = latLng;
+                    blob.cords  = latLng;
                     points.add(blob);
                 }
             }
