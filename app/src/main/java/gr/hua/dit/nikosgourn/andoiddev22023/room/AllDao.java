@@ -13,13 +13,13 @@ public interface AllDao
 {
     
     @Insert
-    long insertGeoPoint(GeoPoint... geoPoints);
+    long insertGeoPoint(GeoPoint geoPoint);
     
     @Insert
-    long insertMapsSession(MapsSession... mapsSessions);
+    long insertMapsSession(MapsSession mapsSession);
     
     @Insert
-    long insertEntranceExitGeoPoint(EntranceExitGeoPoint... entranceExitGeoPoints);
+    long insertEntranceExitGeoPoint(EntranceExitGeoPoint entranceExitGeoPoint);
     
     @Query("SELECT * FROM maps_sessions WHERE is_active = 1")
     MapsSession getActiveMapsSession();

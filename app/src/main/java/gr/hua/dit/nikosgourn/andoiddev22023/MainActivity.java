@@ -4,18 +4,23 @@ import androidx.annotation.NonNull;
 import androidx.annotation.RequiresApi;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.content.ContextCompat;
+import androidx.room.Room;
 
 import android.Manifest;
 import android.annotation.SuppressLint;
 import android.content.BroadcastReceiver;
 import android.content.ComponentName;
+import android.content.ContentResolver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.ServiceConnection;
 import android.content.pm.PackageManager;
 
+import android.database.Cursor;
+import android.database.MatrixCursor;
 import android.location.LocationManager;
+import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.IBinder;
@@ -27,6 +32,10 @@ import android.widget.Toast;
 
 import com.google.android.material.snackbar.Snackbar;
 
+import gr.hua.dit.nikosgourn.andoiddev22023.room.AppDatabase;
+import gr.hua.dit.nikosgourn.andoiddev22023.room.GeoPoint;
+import gr.hua.dit.nikosgourn.andoiddev22023.room.MapsSession;
+
 @RequiresApi(api = Build.VERSION_CODES.Q)
 public class MainActivity extends AppCompatActivity
 {
@@ -34,29 +43,12 @@ public class MainActivity extends AppCompatActivity
     private static final int      REQUEST_CODE = 22023;
     private static final String[] PERMISSIONS  =
             new String[]{ Manifest.permission.ACCESS_FINE_LOCATION , Manifest.permission.ACCESS_BACKGROUND_LOCATION };
-    
-    private LocationService locationService;
-    private boolean         isBound;
-    private Intent          locationServiceIntent;
-    Button select_boundaries, stop_searching, see_boundaries;
+
+    ContentResolver contentResolver;
+    Button          select_boundaries, stop_searching, see_boundaries;
     
     
-    private final ServiceConnection locationServiceConnection = new ServiceConnection()
-    {
-        @Override
-        public void onServiceConnected(ComponentName componentName , IBinder iBinder)
-        {
-            
-            locationService = ((LocationService.LocationBinder) iBinder).getService();
-            isBound         = true;
-        }
-        
-        @Override
-        public void onServiceDisconnected(ComponentName componentName)
-        {
-            isBound = false;
-        }
-    };
+ 
     
     @RequiresApi(api = Build.VERSION_CODES.S)
     @SuppressLint("MissingPermission")
@@ -73,7 +65,10 @@ public class MainActivity extends AppCompatActivity
         IntentFilter intentFilter = new IntentFilter(LocationManager.PROVIDERS_CHANGED_ACTION);
         registerReceiver(broadcastReceiver , intentFilter);
         
-        locationServiceIntent = new Intent(this , LocationService.class);
+        contentResolver = getContentResolver();
+
+        
+  
         requestPermissions();
         
         
@@ -87,7 +82,6 @@ public class MainActivity extends AppCompatActivity
         });
         
         see_boundaries.setOnClickListener(view -> {
-        
         
         });
         
@@ -154,21 +148,5 @@ public class MainActivity extends AppCompatActivity
             requestPermissions(new String[]{ Manifest.permission.ACCESS_BACKGROUND_LOCATION } , REQUEST_CODE);
             return;
         }
-        
-        startForegroundService(locationServiceIntent);
-        bindService(locationServiceIntent , locationServiceConnection , Context.BIND_AUTO_CREATE);
-        
-    }
-    
-    @Override
-    protected void onStop()
-    {
-        super.onStop();
-        if (isBound)
-        {
-            unbindService(locationServiceConnection);
-            isBound = false;
-        }
-        
     }
 }

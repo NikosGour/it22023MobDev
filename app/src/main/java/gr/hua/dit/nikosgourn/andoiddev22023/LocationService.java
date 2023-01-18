@@ -9,13 +9,16 @@ import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.app.Service;
+import android.content.ContentResolver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.database.Cursor;
 import android.graphics.Color;
 import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
+import android.net.Uri;
 import android.os.Binder;
 import android.os.Build;
 import android.os.IBinder;
@@ -24,6 +27,7 @@ import android.util.Log;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.annotation.RequiresApi;
 import androidx.core.content.ContextCompat;
 
@@ -44,16 +48,12 @@ import com.google.android.gms.tasks.Tasks;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executor;
 
+import gr.hua.dit.nikosgourn.andoiddev22023.room.GeoPoint;
+import gr.hua.dit.nikosgourn.andoiddev22023.room.MapsSession;
+
 public class LocationService extends Service
 {
     
-    class LocationBinder extends Binder
-    {
-        public LocationService getService()
-        {
-            return LocationService.this;
-        }
-    }
     
     static class LocationListener implements android.location.LocationListener
     {
@@ -63,22 +63,23 @@ public class LocationService extends Service
         {
             Log.e(TAG , "onLocationChanged: " + location);
             
-            
         }
     }
     
-    private static final String                           TAG = "LocationService";
-    private              IBinder                          binder;
-    private              LocationManager                  locationManager;
-    private              LocationService.LocationListener locationListener;
+    private static final String TAG = "LocationService";
+    
+    private LocationManager                  locationManager;
+    private LocationService.LocationListener locationListener;
+    private ContentResolver                  contentResolver;
+    
     
     @Override
     public void onCreate()
     {
         super.onCreate();
-        binder           = new LocationBinder();
         locationListener = new LocationService.LocationListener();
         locationManager  = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
+        contentResolver  = getContentResolver();
         
     }
     
@@ -88,8 +89,41 @@ public class LocationService extends Service
     @Override
     public int onStartCommand(Intent intent , int flags , int startId)
     {
+        new Thread(() -> {
+            Uri uri = Uri.parse(GeoPointProvider.CONTENT_URI + "/session");
+            Cursor cursor = contentResolver.query(uri , null , null , null , null);
+            
+            if (cursor != null)
+            {
+                cursor.moveToFirst();
+                @SuppressLint("Range") int session_id =
+                        cursor.getInt(cursor.getColumnIndex(MapsSession.SESSION_ID));
+                
+                uri    = Uri.parse(GeoPointProvider.CONTENT_URI + "/points/" + session_id);
+                cursor = contentResolver.query(uri , null , null , null , null);
+                
+                if (cursor != null)
+                {
+                    cursor.moveToFirst();
+                    while (! cursor.isAfterLast())
+                    {
+                        @SuppressLint("Range") double latitude =
+                                cursor.getDouble(cursor.getColumnIndex(GeoPoint.LATITUDE));
+                        @SuppressLint("Range") double longitude =
+                                cursor.getDouble(cursor.getColumnIndex(GeoPoint.LONGITUDE));
+                        Log.d(TAG , "onCreate: Point : " + latitude + " " + longitude);
+                        cursor.moveToNext();
+                    }
+                    cursor.close();
+                }
+                
+            }
+            
+            
+        }).start();
         
         
+        Log.d(TAG , "Starting Location service");
         locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER , Constants.MIN_TIME_INTERVAL_MILLIS , Constants.MIN_DISTANCE_METERS , locationListener);
         
         startForeground(1 , createDummyNotification());
@@ -109,11 +143,7 @@ public class LocationService extends Service
         PendingIntent pendingIntent =
                 PendingIntent.getActivity(this , 0 , new Intent(this , MainActivity.class) , PendingIntent.FLAG_IMMUTABLE);
         
-        return new Notification.Builder(this , "LocationService")
-                .setContentTitle("Location Service")
-                .setContentText("Location Service is running")
-                .setSmallIcon(R.drawable.ic_launcher_foreground)
-                .setContentIntent(pendingIntent).build();
+        return new Notification.Builder(this , "LocationService").setContentTitle("Location Service").setContentText("Location Service is running").setSmallIcon(R.drawable.ic_launcher_foreground).setContentIntent(pendingIntent).build();
     }
     
     @Override
@@ -124,18 +154,12 @@ public class LocationService extends Service
         super.onDestroy();
     }
     
-    
+    @Nullable
     @Override
     public IBinder onBind(Intent intent)
     {
-        return binder;
+        return null;
     }
     
-    @Override
-    public boolean onUnbind(Intent intent)
-    {
-        
-        return super.onUnbind(intent);
-    }
     
 }

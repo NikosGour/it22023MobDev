@@ -6,9 +6,11 @@ import android.content.UriMatcher;
 import android.database.Cursor;
 import android.database.MatrixCursor;
 import android.net.Uri;
+import android.os.Build;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.annotation.RequiresApi;
 import androidx.room.Entity;
 import androidx.room.Room;
 import androidx.room.RoomDatabase;
@@ -24,10 +26,12 @@ import gr.hua.dit.nikosgourn.andoiddev22023.room.MapsSession;
 public class GeoPointProvider extends ContentProvider
 {
     public static final String     AUTHORITY = "gr.hua.dit.nikosgourn.andoiddev22023";
+    public static final Uri        CONTENT_URI = Uri.parse("content://" + AUTHORITY);
     private             UriMatcher uriMatcher;
     private             AllDao     allDao;
     
     
+    @RequiresApi(api = Build.VERSION_CODES.Q)
     @Override
     public boolean onCreate()
     {
@@ -40,10 +44,10 @@ public class GeoPointProvider extends ContentProvider
         uriMatcher.addURI(AUTHORITY , "points/new" , 6);
         uriMatcher.addURI(AUTHORITY , "entrance_exit_points/new" , 7);
         uriMatcher.addURI(AUTHORITY , "session/switch/#" , 8);
+        AppDatabase database        =
+                Room.databaseBuilder(getContext() , AppDatabase.class , "Geofence").build();
         
-        
-        allDao =
-                Room.databaseBuilder(getContext() , AppDatabase.class , "Geofence").build().allDao();
+        allDao = database.allDao();
         
         return false;
     }
@@ -118,9 +122,18 @@ public class GeoPointProvider extends ContentProvider
         switch (uriMatcher.match(uri))
         {
             case 5:
+                MapsSession lastMapsSession = allDao.getLatestMapsSession();
+                if (lastMapsSession != null)
+                {
+                    lastMapsSession.is_active = false;
+                    allDao.updateMapsSession(lastMapsSession);
+                }
+
+                
                 MapsSession mapsSession = new MapsSession();
+                mapsSession.is_active = true;
                 mapsSession.session_id = allDao.insertMapsSession(mapsSession);
-                return Uri.parse("content://" + AUTHORITY + "/session/" + mapsSession.session_id);
+                return Uri.parse("content://" + AUTHORITY + "/session");
             case 6:
                 GeoPoint geoPoint = new GeoPoint();
                 geoPoint.latitude = values.getAsDouble(GeoPoint.LATITUDE);

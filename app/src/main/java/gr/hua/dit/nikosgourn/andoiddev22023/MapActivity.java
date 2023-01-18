@@ -1,9 +1,19 @@
 package gr.hua.dit.nikosgourn.andoiddev22023;
 
 import android.annotation.SuppressLint;
+import android.app.ActivityManager;
+import android.content.ComponentName;
+import android.content.ContentResolver;
+import android.content.ContentValues;
+import android.content.Context;
+import android.content.Intent;
+import android.content.ServiceConnection;
+import android.database.Cursor;
 import android.graphics.Color;
+import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.IBinder;
 import android.util.Log;
 import android.widget.Button;
 
@@ -23,7 +33,8 @@ import java.util.AbstractMap;
 import java.util.ArrayList;
 
 import gr.hua.dit.nikosgourn.andoiddev22023.databinding.ActivityMapBinding;
-import kotlin.NotImplementedError;
+import gr.hua.dit.nikosgourn.andoiddev22023.room.GeoPoint;
+import gr.hua.dit.nikosgourn.andoiddev22023.room.MapsSession;
 
 
 public class MapActivity extends FragmentActivity implements OnMapReadyCallback
@@ -32,8 +43,13 @@ public class MapActivity extends FragmentActivity implements OnMapReadyCallback
     public static        GoogleMap            mMap;
     private              ActivityMapBinding   binding;
     private              ArrayList<PointBlob> points;
-    private Button startButton;
-    private Button cancelButton;
+    private              Button               startButton;
+    private              Button               cancelButton;
+    private              ContentResolver      contentResolver;
+    
+    
+    private LocationService locationService;
+    private Intent          locationServiceIntent;
     
     
     private static class PointBlob
@@ -44,6 +60,7 @@ public class MapActivity extends FragmentActivity implements OnMapReadyCallback
     }
     
     
+    @RequiresApi(api = Build.VERSION_CODES.O)
     @Override
     protected void onCreate(Bundle savedInstanceState)
     {
@@ -51,13 +68,53 @@ public class MapActivity extends FragmentActivity implements OnMapReadyCallback
         points  = new ArrayList<>();
         binding = ActivityMapBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
+    
+        locationServiceIntent = new Intent(this , LocationService.class);
         
-        startButton = findViewById(R.id.start_button);
+
+        
+        startButton  = findViewById(R.id.start_button);
         cancelButton = findViewById(R.id.cancel_button);
+        
+        contentResolver = getContentResolver();
         
         startButton.setOnClickListener(v -> {
             Log.d(TAG , "onCreate: " + "Start Button Clicked");
-            throw new NotImplementedError();
+            new Thread(() -> {
+                
+                if (isLocationServiceRunning())
+                {
+                    Log.d(TAG , "onCreate: " + "Service is already running");
+                    stopService(locationServiceIntent);
+                }
+                
+                
+                
+                
+                Uri uri = Uri.parse(GeoPointProvider.CONTENT_URI + "/session/new");
+                contentResolver.insert(uri , null);
+                
+                uri = Uri.parse(GeoPointProvider.CONTENT_URI + "/session");
+                Cursor cursor = contentResolver.query(uri , null , null , null , null);
+                
+                cursor.moveToFirst();
+                @SuppressLint("Range") int session_id =
+                        cursor.getInt(cursor.getColumnIndex(MapsSession.SESSION_ID));
+                
+                uri = Uri.parse(GeoPointProvider.CONTENT_URI + "/points/new");
+                
+                for (PointBlob point : points)
+                {
+                    ContentValues cv = new ContentValues();
+                    cv.put(GeoPoint.SESSION_ID , session_id);
+                    cv.put(GeoPoint.LATITUDE , point.cords.latitude);
+                    cv.put(GeoPoint.LONGITUDE , point.cords.longitude);
+                    contentResolver.insert(uri , cv);
+                }
+                startForegroundService(locationServiceIntent);
+                finish();
+            }).start();
+            
         });
         
         cancelButton.setOnClickListener(v -> {
@@ -102,7 +159,7 @@ public class MapActivity extends FragmentActivity implements OnMapReadyCallback
             double d = EARTH_RADIUS * c;
             Log.w(TAG , "distanceFromPoint: " + d);
             
-            if (d < 50)
+            if (d < 100)
             {
                 return new AbstractMap.SimpleEntry<>(blob , d);
             }
@@ -124,8 +181,6 @@ public class MapActivity extends FragmentActivity implements OnMapReadyCallback
         mMap.getUiSettings().setZoomGesturesEnabled(true);
         
         
-        
-        
         //zoom in on current location
         
         
@@ -136,7 +191,7 @@ public class MapActivity extends FragmentActivity implements OnMapReadyCallback
                 
                 Marker marker = mMap.addMarker(new MarkerOptions().position(latLng));
                 Circle circle =
-                        mMap.addCircle(new CircleOptions().center(latLng).radius(50).visible(true).strokeColor(Color.RED));
+                        mMap.addCircle(new CircleOptions().center(latLng).radius(100).visible(true).strokeColor(Color.RED));
                 
                 PointBlob blob = new PointBlob();
                 blob.marker = marker;
@@ -171,7 +226,7 @@ public class MapActivity extends FragmentActivity implements OnMapReadyCallback
                 {
                     Marker marker = mMap.addMarker(new MarkerOptions().position(latLng));
                     Circle circle =
-                            mMap.addCircle(new CircleOptions().center(latLng).radius(50).visible(true).strokeColor(Color.RED));
+                            mMap.addCircle(new CircleOptions().center(latLng).radius(100).visible(true).strokeColor(Color.RED));
                     
                     PointBlob blob = new PointBlob();
                     blob.marker = marker;
@@ -184,28 +239,19 @@ public class MapActivity extends FragmentActivity implements OnMapReadyCallback
             
         });
         
-        // Add a marker in Sydney and move the camera
-        //        LatLng sydney = new LatLng(- 34 , 151);
-        //        mMap.addMarker(new MarkerOptions().position(sydney).title("Marker in Sydney"));
-        //        mMap.moveCamera(CameraUpdateFactory.newLatLng(sydney));
-        
-        //        LocationListener locationListener = new LocationListener(locationManager , mMap);
-        //
-        //        locationManager.requestLocationUpdates(GPS_PROVIDER , 5000 , 50 , locationListener);
-        //        if (! isGPSEnabled())
-        //        {
-        //        }
-        
-        
-        //        Circle c =
-        //                mMap.addCircle(new CircleOptions().center(new LatLng(location.getLatitude() , location.getLongitude())).radius(100).strokeColor(Color.RED).strokeWidth(20));
-        //        LatLng location_LatLng = new LatLng(location.getLatitude() , location.getLongitude());
-        //        mMap.addMarker(new MarkerOptions().position(location_LatLng).title("Marker in current location"));
-        //        mMap.moveCamera(CameraUpdateFactory.zoomTo(15));
-        //        mMap.moveCamera(CameraUpdateFactory.newLatLng(location_LatLng));
-        
-        
     }
+    
+    
+    private boolean isLocationServiceRunning() {
+        ActivityManager manager = (ActivityManager) getSystemService(Context.ACTIVITY_SERVICE);
+        for (ActivityManager.RunningServiceInfo service : manager.getRunningServices(Integer.MAX_VALUE)) {
+            if (LocationService.class.getName().equals(service.service.getClassName())) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     
     
 }
