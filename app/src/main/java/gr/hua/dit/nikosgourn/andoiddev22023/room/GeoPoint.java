@@ -5,6 +5,10 @@ import androidx.room.ColumnInfo;
 import androidx.room.Entity;
 import androidx.room.PrimaryKey;
 
+
+/**
+ * This class represents a GeoPoint , meaning a GeoFence point with a radius of 100m.
+ */
 @Entity(tableName = "geo_points")
 public class GeoPoint
 {

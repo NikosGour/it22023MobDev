@@ -8,6 +8,11 @@ import androidx.room.Update;
 import java.util.ArrayList;
 import java.util.List;
 
+
+/**
+ *  Dao interface for the Room database
+ *  Contains all the queries for the database
+ */
 @Dao
 public interface AllDao
 {
@@ -39,9 +44,4 @@ public interface AllDao
     @Update
     void updateMapsSession(MapsSession mapsSession);
     
-    @Update
-    void updateGeoPoint(GeoPoint geoPoint);
-    
-    @Update
-    void updateEntranceExitGeoPoint(EntranceExitGeoPoint entranceExitGeoPoint);
 }

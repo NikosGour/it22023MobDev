@@ -30,12 +30,16 @@ import gr.hua.dit.nikosgourn.andoiddev22023.room.EntranceExitGeoPoint;
 import gr.hua.dit.nikosgourn.andoiddev22023.room.GeoPoint;
 import gr.hua.dit.nikosgourn.andoiddev22023.room.MapsSession;
 
+/**
+ * Background service that handles location updates.
+ * and saves the entered/exited points to the database.
+ */
 @SuppressLint("MissingPermission")
 @RequiresApi(api = Build.VERSION_CODES.Q)
 public class LocationService extends Service
 {
     
-    
+    // GeoFence points of current session
     private ArrayList<Point> points;
     private Location         lastLocation;
     
@@ -50,39 +54,52 @@ public class LocationService extends Service
             if (lastLocation != null)
             {
                 EntranceExitGeoPoint entranceExitGeoPoint = new EntranceExitGeoPoint();
-    
-                boolean isLastLocationOutsideOfPoints = ! isPointInCircles(new LatLng(lastLocation.getLatitude() , lastLocation.getLongitude()));
-                boolean isCurrentLocationInsideOfPoints = isPointInCircles(new LatLng(location.getLatitude() , location.getLongitude()));
-    
+                
+                boolean isLastLocationOutsideOfPoints =
+                        ! isPointInCircles(new LatLng(lastLocation.getLatitude() , lastLocation.getLongitude()));
+                boolean isCurrentLocationInsideOfPoints =
+                        isPointInCircles(new LatLng(location.getLatitude() , location.getLongitude()));
+                
+                // If the last location was outside of the points and the current location is inside of the points
+                // then the user has entered a point
                 if (isLastLocationOutsideOfPoints && isCurrentLocationInsideOfPoints)
                 {
-        
+                    
                     entranceExitGeoPoint.latitude          = location.getLatitude();
                     entranceExitGeoPoint.longitude         = location.getLongitude();
                     entranceExitGeoPoint.session_id        = sessionId;
                     entranceExitGeoPoint.is_entrance_point = true;
-        
+                    
                     Log.e(TAG , "onLocationChanged: " + entranceExitGeoPoint);
                     addEntranceExitGeoPoint(entranceExitGeoPoint);
-        
-                } else if (! isLastLocationOutsideOfPoints && ! isCurrentLocationInsideOfPoints)
+                    
+                }
+                // If the last location was inside of the points and the current location is outside of the points
+                // that means that the user has exited the points
+                else if (! isLastLocationOutsideOfPoints && ! isCurrentLocationInsideOfPoints)
                 {
                     entranceExitGeoPoint.latitude          = lastLocation.getLatitude();
                     entranceExitGeoPoint.longitude         = lastLocation.getLongitude();
                     entranceExitGeoPoint.session_id        = sessionId;
                     entranceExitGeoPoint.is_entrance_point = false;
-        
+                    
                     Log.e(TAG , "onLocationChanged: " + entranceExitGeoPoint);
                     addEntranceExitGeoPoint(entranceExitGeoPoint);
                 }
             }
+            
+            // Update last location to current location for next iteration
             lastLocation = location;
             
             
         }
     }
     
-    private class Point
+    
+    /**
+     * Helper Class
+     */
+    private static class Point
     {
         public double latitude;
         public double longitude;
@@ -113,21 +130,22 @@ public class LocationService extends Service
     @SuppressLint("Range")
     public int onStartCommand(Intent intent , int flags , int startId)
     {
+        Log.d(TAG , "Starting Location service");
+        // Get the points from the latest session
+        // and start listening for location updates
         new Thread(() -> {
             
-            sessionId = intent.getIntExtra("session_id" , - 1);
-            if (sessionId == - 1)
-            {
-                Uri _uri = Uri.parse(GeoPointProvider.CONTENT_URI + "/session");
-                Cursor _cursor = contentResolver.query(_uri , null , null , null , null);
-                
-                _cursor.moveToFirst();
-                sessionId = _cursor.getInt(_cursor.getColumnIndex(MapsSession.SESSION_ID));
-                _cursor.close();
-            }
-            
-            Uri uri = Uri.parse(GeoPointProvider.CONTENT_URI + "/points/" + sessionId);
+            // Get the latest session id
+            Uri uri = GeoPointProvider.GET_LATEST_MAPS_SESSIONS_URI;
             Cursor cursor = contentResolver.query(uri , null , null , null , null);
+            
+            cursor.moveToFirst();
+            sessionId = cursor.getInt(cursor.getColumnIndex(MapsSession.SESSION_ID));
+            cursor.close();
+            
+            // Get the points of the latest session
+            uri = Uri.withAppendedPath(GeoPointProvider.GET_ALL_GEO_POINTS_URI_ADD_SESSION_ID,sessionId+"");
+            cursor = contentResolver.query(uri , null , null , null , null);
             
             if (cursor != null)
             {
@@ -150,10 +168,10 @@ public class LocationService extends Service
             
         }).start();
         
-        
-        Log.d(TAG , "Starting Location service");
+        // Start listening for location updates
         locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER , Utilities.MIN_TIME_INTERVAL_MILLIS , Utilities.MIN_DISTANCE_METERS , locationListener);
         
+        // Run the service in the background
         startForeground(1 , createDummyNotification());
         return super.
                 
@@ -163,13 +181,14 @@ public class LocationService extends Service
     
     private void addEntranceExitGeoPoint(EntranceExitGeoPoint entranceExitGeoPoint)
     {
-        Uri uri = Uri.parse(GeoPointProvider.CONTENT_URI + "/entrance_exit_points/new");
+        Uri uri = GeoPointProvider.CREATE_ENTRANCE_EXIT_GEO_POINT_URI;
         
         ContentValues contentValues = new ContentValues();
         contentValues.put(EntranceExitGeoPoint.LATITUDE , entranceExitGeoPoint.latitude);
         contentValues.put(EntranceExitGeoPoint.LONGITUDE , entranceExitGeoPoint.longitude);
         contentValues.put(EntranceExitGeoPoint.SESSION_ID , entranceExitGeoPoint.session_id);
         contentValues.put(EntranceExitGeoPoint.IS_ENTRANCE , entranceExitGeoPoint.is_entrance_point);
+        
         new Thread(() -> contentResolver.insert(uri , contentValues)).start();
     }
     
@@ -189,6 +208,7 @@ public class LocationService extends Service
     }
     
     
+    // Check if location is inside one of the points of the current session
     private boolean isPointInCircles(LatLng location)
     {
         for (Point point : points)

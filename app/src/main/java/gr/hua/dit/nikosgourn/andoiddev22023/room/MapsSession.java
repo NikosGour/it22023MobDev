@@ -5,6 +5,11 @@ import androidx.room.ColumnInfo;
 import androidx.room.Entity;
 import androidx.room.PrimaryKey;
 
+
+/**
+ * A MapsSession is a parent object that connects other database objects.
+ * a mapsSession has multiple GeoPoints and multiple EntranceExitPoints.
+ */
 @Entity(tableName = "maps_sessions")
 public class MapsSession
 {

@@ -2,11 +2,20 @@ package gr.hua.dit.nikosgourn.andoiddev22023;
 
 import com.google.android.gms.maps.model.LatLng;
 
+/**
+ * Utils class contains Constants and utility methods used across all classes
+ */
 public class Utilities
 {
     public static final int MIN_TIME_INTERVAL_MILLIS = 5000;
     public static final int MIN_DISTANCE_METERS      = 50;
     
+    /**
+     * Calculates the distance between two points in the surface of the earth
+     * @param point the point to be checked
+     * @param target from where the distance is measured
+     * @return the distance between the two points in meters
+     */
     public static double distance_point_from_target(LatLng point, LatLng target )
     {
         final double EARTH_RADIUS = 6371e3;

@@ -41,12 +41,8 @@ public class MainActivity extends AppCompatActivity
 {
     private static final String   TAG          = "MainActivity";
     private static final int      REQUEST_CODE = 22023;
-    private static final String[] PERMISSIONS  =
-            new String[]{ Manifest.permission.ACCESS_FINE_LOCATION , Manifest.permission.ACCESS_BACKGROUND_LOCATION };
 
     ContentResolver contentResolver;
-    Button          select_boundaries, stop_searching, see_boundaries;
-    
     
  
     
@@ -57,51 +53,42 @@ public class MainActivity extends AppCompatActivity
     {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        select_boundaries = findViewById(R.id.selectBoundariesButton);
-        stop_searching    = findViewById(R.id.stopSearchingButton);
-        see_boundaries    = findViewById(R.id.seeBoundariesButton);
+        
+        Button select_boundaries = findViewById(R.id.selectBoundariesButton);
+        Button stop_searching    = findViewById(R.id.stopSearchingButton);
+        Button see_boundaries    = findViewById(R.id.seeBoundariesButton);
         
         BroadcastReceiver broadcastReceiver = new GPSReceiver();
         IntentFilter intentFilter = new IntentFilter(LocationManager.PROVIDERS_CHANGED_ACTION);
         registerReceiver(broadcastReceiver , intentFilter);
         
         contentResolver = getContentResolver();
-
         
-  
         requestPermissions();
         
-        
-        select_boundaries.setOnClickListener(view -> {
-            startActivity(new Intent(this , MapActivity.class));
-        });
+        // region Buttons
+        select_boundaries.setOnClickListener(view -> startActivity(new Intent(this , MapActivity.class)));
         
         stop_searching.setOnClickListener(view -> {
             Intent locationServiceIntent = new Intent(this , LocationService.class);
             stopService(locationServiceIntent);
         });
         
-        see_boundaries.setOnClickListener(view -> {
-            startActivity(new Intent(this , ResultsMapActivity.class));
-        });
+        see_boundaries.setOnClickListener(view -> startActivity(new Intent(this , ResultsMapActivity.class)));
+        // endregion
         
         
     }
     
     @Override
-    public void onRequestPermissionsResult(int requestCode , @NonNull String[] permissions ,
-                                           @NonNull int[] grantResults)
+    public void onRequestPermissionsResult(int requestCode , @NonNull String[] permissions , @NonNull int[] grantResults)
     {
         super.onRequestPermissionsResult(requestCode , permissions , grantResults);
-        
-        
         if (requestCode == REQUEST_CODE)
         {
-            
             if (permissions[0].equals(Manifest.permission.ACCESS_FINE_LOCATION))
             {
                 Log.e(TAG , "Permission" + permissions[0] + " was " + grantResults[0]);
-                
                 requestPermissions();
                 return;
             }
@@ -110,22 +97,20 @@ public class MainActivity extends AppCompatActivity
             if (permissions[0].equals(Manifest.permission.ACCESS_BACKGROUND_LOCATION))
             {
                 Log.e(TAG , "Permission" + permissions[0] + " was " + grantResults[0]);
-                
                 if (grantResults[0] == PackageManager.PERMISSION_GRANTED)
                 {
                     requestPermissions();
                 } else
                 {
-                    var snackbar =
-                            Snackbar.make(findViewById(android.R.id.content) , "Background Location permissions are required, please go to Settings -> Apps and change the location permission to 'Always'" , Snackbar.LENGTH_LONG);
+                    // If background location is not granted, then the app will not be able to receive location updates when the app is not in the foreground.
+                    // We cannot request background location again, so we ask the user to turn on location in device settings.
+                    var snackbar = Snackbar.make(findViewById(android.R.id.content) , "Background Location permissions are required, please go to Settings -> Apps and change the location permission to 'Always'" , Snackbar.LENGTH_LONG);
                     View snackbarView = snackbar.getView();
-                    TextView snackbarTextView =
-                            (TextView) (snackbarView.findViewById(com.google.android.material.R.id.snackbar_text));
+                    TextView snackbarTextView = (TextView) (snackbarView.findViewById(com.google.android.material.R.id.snackbar_text));
                     snackbarTextView.setMaxLines(3);
                     snackbar.show();
                 }
-                return;
-                
+    
             }
             
         }
@@ -133,8 +118,7 @@ public class MainActivity extends AppCompatActivity
     
     private void requestPermissions()
     {
-        int[] permission =
-                new int[]{ ContextCompat.checkSelfPermission(this , Manifest.permission.ACCESS_FINE_LOCATION) , ContextCompat.checkSelfPermission(this , Manifest.permission.ACCESS_BACKGROUND_LOCATION) };
+        int[] permission = new int[]{ ContextCompat.checkSelfPermission(this , Manifest.permission.ACCESS_FINE_LOCATION) , ContextCompat.checkSelfPermission(this , Manifest.permission.ACCESS_BACKGROUND_LOCATION) };
         
         
         if (permission[0] == PackageManager.PERMISSION_DENIED)
@@ -146,7 +130,6 @@ public class MainActivity extends AppCompatActivity
         if (permission[1] == PackageManager.PERMISSION_DENIED)
         {
             requestPermissions(new String[]{ Manifest.permission.ACCESS_BACKGROUND_LOCATION } , REQUEST_CODE);
-            return;
         }
     }
 }

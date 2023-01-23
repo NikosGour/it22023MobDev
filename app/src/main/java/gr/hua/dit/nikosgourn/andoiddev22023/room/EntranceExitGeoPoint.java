@@ -5,6 +5,9 @@ import androidx.room.ColumnInfo;
 import androidx.room.Entity;
 import androidx.room.PrimaryKey;
 
+/**
+ * A SPECIFIC GeoPoint that is used to mark the entrance and exit from a GeoFence Point.
+ */
 @Entity(tableName = "entrance_exit_geo_points")
 public class EntranceExitGeoPoint
 {

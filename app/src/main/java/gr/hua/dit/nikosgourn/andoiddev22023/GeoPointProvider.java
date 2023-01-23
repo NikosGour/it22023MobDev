@@ -23,11 +23,16 @@ import gr.hua.dit.nikosgourn.andoiddev22023.room.EntranceExitGeoPoint;
 import gr.hua.dit.nikosgourn.andoiddev22023.room.GeoPoint;
 import gr.hua.dit.nikosgourn.andoiddev22023.room.MapsSession;
 
+/**
+ * General ContentProvider for the app.
+ * provides the app with access to geopoints and entrance/exit geopoints and maps sessions of the database.
+ */
 public class GeoPointProvider extends ContentProvider
 {
     public static final String     AUTHORITY   = "gr.hua.dit.nikosgourn.andoiddev22023";
-    
     public static final Uri        CONTENT_URI = Uri.parse("content://" + AUTHORITY);
+    
+    // region URIs
     public static final Uri    GET_ALL_GEO_POINTS_URI_ADD_SESSION_ID = Uri.withAppendedPath(CONTENT_URI , "points");
     public static final Uri    GET_ALL_ENTRANCE_EXIT_GEO_POINTS_URI_ADD_SESSION_ID = Uri.withAppendedPath(CONTENT_URI , "entrance_exit_points");
     public static final Uri    GET_ACTIVE_MAPS_SESSIONS_URI = Uri.withAppendedPath(CONTENT_URI , "session/active");
@@ -36,7 +41,9 @@ public class GeoPointProvider extends ContentProvider
     public static final Uri    CREATE_GEO_POINT_URI = Uri.withAppendedPath(CONTENT_URI , "points/new");
     public static final Uri    CREATE_ENTRANCE_EXIT_GEO_POINT_URI = Uri.withAppendedPath(CONTENT_URI , "entrance_exit_points/new");
     public static final Uri    SWITCH_ACTIVE_STATUS_MAPS_SESSION_URI_ADD_SESSION_ID = Uri.withAppendedPath(CONTENT_URI , "session/switch");
+    // endregion
     
+    // region URIs matchers
     private static final int    GET_ALL_GEO_POINTS = 1;
     private static final int    GET_ALL_ENTRANCE_EXIT_GEO_POINTS = 2;
     private static final int    GET_ACTIVE_MAPS_SESSIONS = 3;
@@ -45,6 +52,7 @@ public class GeoPointProvider extends ContentProvider
     private static final int    CREATE_GEO_POINT = 6;
     private static final int    CREATE_ENTRANCE_EXIT_GEO_POINT = 7;
     private static final int    SWITCH_ACTIVE_STATUS_MAPS_SESSION = 8;
+    // endregion
     
     private             UriMatcher uriMatcher;
     private             AllDao     allDao;
@@ -95,6 +103,7 @@ public class GeoPointProvider extends ContentProvider
     {
         int session_id;
         MatrixCursor matrixCursor;
+        
         switch (uriMatcher.match(uri))
         {
             case GET_ALL_GEO_POINTS:
@@ -129,14 +138,20 @@ public class GeoPointProvider extends ContentProvider
             case GET_ACTIVE_MAPS_SESSIONS:
                 
                 MapsSession activeMapsSession = allDao.getActiveMapsSession();
+                if (activeMapsSession == null)
+                {
+                    return null;
+                }
                 matrixCursor = new MatrixCursor(new String[]{ MapsSession.SESSION_ID });
                 matrixCursor.addRow(new Object[]{ activeMapsSession.session_id });
+                
                 return matrixCursor;
             case GET_LATEST_MAPS_SESSIONS:
                 
                 MapsSession latestMapsSession = allDao.getLatestMapsSession();
                 matrixCursor = new MatrixCursor(new String[]{ MapsSession.SESSION_ID });
                 matrixCursor.addRow(new Object[]{ latestMapsSession.session_id });
+                
                 return matrixCursor;
             default:
                 return null;
@@ -158,6 +173,7 @@ public class GeoPointProvider extends ContentProvider
         switch (uriMatcher.match(uri))
         {
             case CREATE_MAPS_SESSION:
+                // Switches the active status of the last session to false
                 MapsSession lastMapsSession = allDao.getLatestMapsSession();
                 if (lastMapsSession != null)
                 {
@@ -165,20 +181,30 @@ public class GeoPointProvider extends ContentProvider
                     allDao.updateMapsSession(lastMapsSession);
                 }
                 
-                
+                // Create a new session
                 MapsSession mapsSession = new MapsSession();
                 mapsSession.is_active = true;
                 mapsSession.session_id = allDao.insertMapsSession(mapsSession);
+                
                 return Uri.parse("content://" + AUTHORITY + "/session");
+                
             case CREATE_GEO_POINT:
                 GeoPoint geoPoint = new GeoPoint();
+                
+                // Values should never be null
+                assert values != null;
                 geoPoint.latitude = values.getAsDouble(GeoPoint.LATITUDE);
                 geoPoint.longitude = values.getAsDouble(GeoPoint.LONGITUDE);
                 geoPoint.session_id = values.getAsInteger(GeoPoint.SESSION_ID);
                 allDao.insertGeoPoint(geoPoint);
+                
                 return Uri.parse("content://" + AUTHORITY + "/points/" + geoPoint.session_id);
+                
             case CREATE_ENTRANCE_EXIT_GEO_POINT:
                 EntranceExitGeoPoint entranceExitGeoPoint = new EntranceExitGeoPoint();
+                
+                // Values should never be null
+                assert values != null;
                 entranceExitGeoPoint.latitude = values.getAsDouble(EntranceExitGeoPoint.LATITUDE);
                 entranceExitGeoPoint.longitude = values.getAsDouble(EntranceExitGeoPoint.LONGITUDE);
                 entranceExitGeoPoint.session_id =
@@ -186,6 +212,7 @@ public class GeoPointProvider extends ContentProvider
                 entranceExitGeoPoint.is_entrance_point =
                         values.getAsBoolean(EntranceExitGeoPoint.IS_ENTRANCE);
                 allDao.insertEntranceExitGeoPoint(entranceExitGeoPoint);
+                
                 return Uri.parse("content://" +
                                  AUTHORITY +
                                  "/entrance_exit_points/" +
@@ -213,6 +240,7 @@ public class GeoPointProvider extends ContentProvider
             MapsSession mapsSession = allDao.getMapsSessionById(session_id);
             mapsSession.is_active = ! mapsSession.is_active;
             allDao.updateMapsSession(mapsSession);
+            
             return 1;
         }
         return 0;
