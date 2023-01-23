@@ -1,5 +1,6 @@
 package gr.hua.dit.nikosgourn.andoiddev22023.room;
 
+import androidx.annotation.NonNull;
 import androidx.room.ColumnInfo;
 import androidx.room.Entity;
 import androidx.room.PrimaryKey;
@@ -28,4 +29,18 @@ public class EntranceExitGeoPoint
     
     @ColumnInfo(name = IS_ENTRANCE)
     public boolean is_entrance_point;
+    
+    @NonNull
+    @Override
+    public String toString()
+    {
+        
+        return "EntranceExitGeoPoint{" +
+               "id=" + id +
+               ", latitude=" + latitude +
+               ", longitude=" + longitude +
+               ", session_id=" + session_id +
+               ", is_entrance_point=" + is_entrance_point +
+               '}';
+    }
 }

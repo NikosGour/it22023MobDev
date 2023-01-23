@@ -82,7 +82,7 @@ public class MainActivity extends AppCompatActivity
         });
         
         see_boundaries.setOnClickListener(view -> {
-        
+            startActivity(new Intent(this , ResultsMapActivity.class));
         });
         
         

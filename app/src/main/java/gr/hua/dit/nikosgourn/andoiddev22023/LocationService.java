@@ -1,8 +1,5 @@
 package gr.hua.dit.nikosgourn.andoiddev22023;
 
-import static android.location.LocationManager.GPS_PROVIDER;
-
-import android.Manifest;
 import android.annotation.SuppressLint;
 import android.app.Notification;
 import android.app.NotificationChannel;
@@ -10,60 +7,85 @@ import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.app.Service;
 import android.content.ContentResolver;
+import android.content.ContentValues;
 import android.content.Context;
 import android.content.Intent;
-import android.content.pm.PackageManager;
 import android.database.Cursor;
-import android.graphics.Color;
 import android.location.Location;
-import android.location.LocationListener;
 import android.location.LocationManager;
 import android.net.Uri;
-import android.os.Binder;
 import android.os.Build;
 import android.os.IBinder;
-import android.os.Looper;
 import android.util.Log;
-import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.annotation.RequiresApi;
-import androidx.core.content.ContextCompat;
 
-import com.google.android.gms.location.FusedLocationProviderClient;
-import com.google.android.gms.location.LocationCallback;
-import com.google.android.gms.location.LocationRequest;
-import com.google.android.gms.location.LocationResult;
-import com.google.android.gms.location.LocationServices;
-import com.google.android.gms.location.Priority;
-import com.google.android.gms.maps.CameraUpdateFactory;
-import com.google.android.gms.maps.GoogleMap;
-import com.google.android.gms.maps.model.Circle;
-import com.google.android.gms.maps.model.CircleOptions;
 import com.google.android.gms.maps.model.LatLng;
-import com.google.android.gms.maps.model.MarkerOptions;
-import com.google.android.gms.tasks.Tasks;
 
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Executor;
+import java.util.ArrayList;
 
+import gr.hua.dit.nikosgourn.andoiddev22023.room.EntranceExitGeoPoint;
 import gr.hua.dit.nikosgourn.andoiddev22023.room.GeoPoint;
 import gr.hua.dit.nikosgourn.andoiddev22023.room.MapsSession;
 
+@SuppressLint("MissingPermission")
+@RequiresApi(api = Build.VERSION_CODES.Q)
 public class LocationService extends Service
 {
     
     
-    static class LocationListener implements android.location.LocationListener
+    private ArrayList<Point> points;
+    private Location         lastLocation;
+    
+    
+    class LocationListener implements android.location.LocationListener
     {
         
         @Override
         public void onLocationChanged(@NonNull Location location)
         {
             Log.e(TAG , "onLocationChanged: " + location);
+            if (lastLocation != null)
+            {
+                EntranceExitGeoPoint entranceExitGeoPoint = new EntranceExitGeoPoint();
+    
+                boolean isLastLocationOutsideOfPoints = ! isPointInCircles(new LatLng(lastLocation.getLatitude() , lastLocation.getLongitude()));
+                boolean isCurrentLocationInsideOfPoints = isPointInCircles(new LatLng(location.getLatitude() , location.getLongitude()));
+    
+                if (isLastLocationOutsideOfPoints && isCurrentLocationInsideOfPoints)
+                {
+        
+                    entranceExitGeoPoint.latitude          = location.getLatitude();
+                    entranceExitGeoPoint.longitude         = location.getLongitude();
+                    entranceExitGeoPoint.session_id        = sessionId;
+                    entranceExitGeoPoint.is_entrance_point = true;
+        
+                    Log.e(TAG , "onLocationChanged: " + entranceExitGeoPoint);
+                    addEntranceExitGeoPoint(entranceExitGeoPoint);
+        
+                } else if (! isLastLocationOutsideOfPoints && ! isCurrentLocationInsideOfPoints)
+                {
+                    entranceExitGeoPoint.latitude          = lastLocation.getLatitude();
+                    entranceExitGeoPoint.longitude         = lastLocation.getLongitude();
+                    entranceExitGeoPoint.session_id        = sessionId;
+                    entranceExitGeoPoint.is_entrance_point = false;
+        
+                    Log.e(TAG , "onLocationChanged: " + entranceExitGeoPoint);
+                    addEntranceExitGeoPoint(entranceExitGeoPoint);
+                }
+            }
+            lastLocation = location;
+            
             
         }
+    }
+    
+    private class Point
+    {
+        public double latitude;
+        public double longitude;
     }
     
     private static final String TAG = "LocationService";
@@ -71,67 +93,87 @@ public class LocationService extends Service
     private LocationManager                  locationManager;
     private LocationService.LocationListener locationListener;
     private ContentResolver                  contentResolver;
+    private int                              sessionId;
     
     
     @Override
     public void onCreate()
     {
         super.onCreate();
+        points           = new ArrayList<>();
         locationListener = new LocationService.LocationListener();
         locationManager  = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
         contentResolver  = getContentResolver();
+        lastLocation     = locationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER);
         
     }
     
     
-    @RequiresApi(api = Build.VERSION_CODES.Q)
-    @SuppressLint("MissingPermission")
     @Override
+    @SuppressLint("Range")
     public int onStartCommand(Intent intent , int flags , int startId)
     {
         new Thread(() -> {
-            Uri uri = Uri.parse(GeoPointProvider.CONTENT_URI + "/session");
+            
+            sessionId = intent.getIntExtra("session_id" , - 1);
+            if (sessionId == - 1)
+            {
+                Uri _uri = Uri.parse(GeoPointProvider.CONTENT_URI + "/session");
+                Cursor _cursor = contentResolver.query(_uri , null , null , null , null);
+                
+                _cursor.moveToFirst();
+                sessionId = _cursor.getInt(_cursor.getColumnIndex(MapsSession.SESSION_ID));
+                _cursor.close();
+            }
+            
+            Uri uri = Uri.parse(GeoPointProvider.CONTENT_URI + "/points/" + sessionId);
             Cursor cursor = contentResolver.query(uri , null , null , null , null);
             
             if (cursor != null)
             {
                 cursor.moveToFirst();
-                @SuppressLint("Range") int session_id =
-                        cursor.getInt(cursor.getColumnIndex(MapsSession.SESSION_ID));
-                
-                uri    = Uri.parse(GeoPointProvider.CONTENT_URI + "/points/" + session_id);
-                cursor = contentResolver.query(uri , null , null , null , null);
-                
-                if (cursor != null)
+                while (! cursor.isAfterLast())
                 {
-                    cursor.moveToFirst();
-                    while (! cursor.isAfterLast())
-                    {
-                        @SuppressLint("Range") double latitude =
-                                cursor.getDouble(cursor.getColumnIndex(GeoPoint.LATITUDE));
-                        @SuppressLint("Range") double longitude =
-                                cursor.getDouble(cursor.getColumnIndex(GeoPoint.LONGITUDE));
-                        Log.d(TAG , "onCreate: Point : " + latitude + " " + longitude);
-                        cursor.moveToNext();
-                    }
-                    cursor.close();
+                    double latitude = cursor.getDouble(cursor.getColumnIndex(GeoPoint.LATITUDE));
+                    double longitude = cursor.getDouble(cursor.getColumnIndex(GeoPoint.LONGITUDE));
+                    Log.d(TAG , "onCreate: Point : " + latitude + " " + longitude);
+                    
+                    Point point = new Point();
+                    point.latitude  = latitude;
+                    point.longitude = longitude;
+                    points.add(point);
+                    
+                    cursor.moveToNext();
                 }
-                
+                cursor.close();
             }
-            
             
         }).start();
         
         
         Log.d(TAG , "Starting Location service");
-        locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER , Constants.MIN_TIME_INTERVAL_MILLIS , Constants.MIN_DISTANCE_METERS , locationListener);
+        locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER , Utilities.MIN_TIME_INTERVAL_MILLIS , Utilities.MIN_DISTANCE_METERS , locationListener);
         
         startForeground(1 , createDummyNotification());
-        return super.onStartCommand(intent , flags , startId);
+        return super.
+                
+                onStartCommand(intent , flags , startId);
+        
+    }
+    
+    private void addEntranceExitGeoPoint(EntranceExitGeoPoint entranceExitGeoPoint)
+    {
+        Uri uri = Uri.parse(GeoPointProvider.CONTENT_URI + "/entrance_exit_points/new");
+        
+        ContentValues contentValues = new ContentValues();
+        contentValues.put(EntranceExitGeoPoint.LATITUDE , entranceExitGeoPoint.latitude);
+        contentValues.put(EntranceExitGeoPoint.LONGITUDE , entranceExitGeoPoint.longitude);
+        contentValues.put(EntranceExitGeoPoint.SESSION_ID , entranceExitGeoPoint.session_id);
+        contentValues.put(EntranceExitGeoPoint.IS_ENTRANCE , entranceExitGeoPoint.is_entrance_point);
+        new Thread(() -> contentResolver.insert(uri , contentValues)).start();
     }
     
     
-    @RequiresApi(api = Build.VERSION_CODES.Q)
     private Notification createDummyNotification()
     {
         NotificationManager notificationManager =
@@ -144,6 +186,21 @@ public class LocationService extends Service
                 PendingIntent.getActivity(this , 0 , new Intent(this , MainActivity.class) , PendingIntent.FLAG_IMMUTABLE);
         
         return new Notification.Builder(this , "LocationService").setContentTitle("Location Service").setContentText("Location Service is running").setSmallIcon(R.drawable.ic_launcher_foreground).setContentIntent(pendingIntent).build();
+    }
+    
+    
+    private boolean isPointInCircles(LatLng location)
+    {
+        for (Point point : points)
+        {
+            double distance =
+                    Utilities.distance_point_from_target(new LatLng(location.latitude , location.longitude) , new LatLng(point.latitude , point.longitude));
+            if (distance <= 100)
+            {
+                return true;
+            }
+        }
+        return false;
     }
     
     @Override

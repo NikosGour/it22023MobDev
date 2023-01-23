@@ -2,18 +2,15 @@ package gr.hua.dit.nikosgourn.andoiddev22023;
 
 import android.annotation.SuppressLint;
 import android.app.ActivityManager;
-import android.content.ComponentName;
 import android.content.ContentResolver;
 import android.content.ContentValues;
 import android.content.Context;
 import android.content.Intent;
-import android.content.ServiceConnection;
 import android.database.Cursor;
 import android.graphics.Color;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
-import android.os.IBinder;
 import android.util.Log;
 import android.widget.Button;
 
@@ -37,6 +34,7 @@ import gr.hua.dit.nikosgourn.andoiddev22023.room.GeoPoint;
 import gr.hua.dit.nikosgourn.andoiddev22023.room.MapsSession;
 
 
+@RequiresApi(api = Build.VERSION_CODES.Q)
 public class MapActivity extends FragmentActivity implements OnMapReadyCallback
 {
     private static final String               TAG = "MapActivity";
@@ -60,7 +58,6 @@ public class MapActivity extends FragmentActivity implements OnMapReadyCallback
     }
     
     
-    @RequiresApi(api = Build.VERSION_CODES.O)
     @Override
     protected void onCreate(Bundle savedInstanceState)
     {
@@ -101,6 +98,8 @@ public class MapActivity extends FragmentActivity implements OnMapReadyCallback
                 @SuppressLint("Range") int session_id =
                         cursor.getInt(cursor.getColumnIndex(MapsSession.SESSION_ID));
                 
+                cursor.close();
+                
                 uri = Uri.parse(GeoPointProvider.CONTENT_URI + "/points/new");
                 
                 for (PointBlob point : points)
@@ -111,6 +110,8 @@ public class MapActivity extends FragmentActivity implements OnMapReadyCallback
                     cv.put(GeoPoint.LONGITUDE , point.cords.longitude);
                     contentResolver.insert(uri , cv);
                 }
+                
+                locationServiceIntent.putExtra( MapsSession.SESSION_ID , session_id);
                 startForegroundService(locationServiceIntent);
                 finish();
             }).start();
@@ -132,11 +133,8 @@ public class MapActivity extends FragmentActivity implements OnMapReadyCallback
     }
     
     
-    @RequiresApi(api = Build.VERSION_CODES.N)
     public AbstractMap.SimpleEntry<PointBlob, Double> distanceFromPoint(LatLng latLng)
     {
-        final double EARTH_RADIUS = 6371e3;
-        Log.w(TAG , "distanceFromPoint: " + EARTH_RADIUS);
         if (points.size() == 0)
         {
             return null;
@@ -145,20 +143,8 @@ public class MapActivity extends FragmentActivity implements OnMapReadyCallback
         for (PointBlob blob : points)
         {
             LatLng point = blob.cords;
-            
-            double lat1 = Math.toRadians(point.latitude);
-            double lat2 = Math.toRadians(latLng.latitude);
-            double lon1 = Math.toRadians(point.longitude);
-            double lon2 = Math.toRadians(latLng.longitude);
-            double dLat = lat2 - lat1;
-            double dLon = lon2 - lon1;
-            
-            double a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-                       Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLon / 2) * Math.sin(dLon / 2);
-            double c = 2 * Math.atan2(Math.sqrt(a) , Math.sqrt(1 - a));
-            double d = EARTH_RADIUS * c;
-            Log.w(TAG , "distanceFromPoint: " + d);
-            
+    
+            double d = Utilities.distance_point_from_target(point , latLng);
             if (d < 100)
             {
                 return new AbstractMap.SimpleEntry<>(blob , d);
@@ -168,7 +154,6 @@ public class MapActivity extends FragmentActivity implements OnMapReadyCallback
         return null;
     }
     
-    @RequiresApi(api = Build.VERSION_CODES.N)
     @SuppressLint("MissingPermission")
     @Override
     public void onMapReady(GoogleMap googleMap)
