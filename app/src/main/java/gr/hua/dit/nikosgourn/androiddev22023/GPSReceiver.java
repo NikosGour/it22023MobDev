@@ -1,11 +1,10 @@
-package gr.hua.dit.nikosgourn.andoiddev22023;
+package gr.hua.dit.nikosgourn.androiddev22023;
 
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.location.LocationManager;
 import android.os.Build;
-import android.os.Bundle;
 import android.util.Log;
 
 import androidx.annotation.RequiresApi;

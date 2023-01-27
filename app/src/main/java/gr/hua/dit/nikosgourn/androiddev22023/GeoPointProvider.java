@@ -1,4 +1,4 @@
-package gr.hua.dit.nikosgourn.andoiddev22023;
+package gr.hua.dit.nikosgourn.androiddev22023;
 
 import android.content.ContentProvider;
 import android.content.ContentValues;
@@ -11,17 +11,15 @@ import android.os.Build;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.annotation.RequiresApi;
-import androidx.room.Entity;
 import androidx.room.Room;
-import androidx.room.RoomDatabase;
 
 import java.util.List;
 
-import gr.hua.dit.nikosgourn.andoiddev22023.room.AllDao;
-import gr.hua.dit.nikosgourn.andoiddev22023.room.AppDatabase;
-import gr.hua.dit.nikosgourn.andoiddev22023.room.EntranceExitGeoPoint;
-import gr.hua.dit.nikosgourn.andoiddev22023.room.GeoPoint;
-import gr.hua.dit.nikosgourn.andoiddev22023.room.MapsSession;
+import gr.hua.dit.nikosgourn.androiddev22023.room.AllDao;
+import gr.hua.dit.nikosgourn.androiddev22023.room.AppDatabase;
+import gr.hua.dit.nikosgourn.androiddev22023.room.EntranceExitGeoPoint;
+import gr.hua.dit.nikosgourn.androiddev22023.room.GeoPoint;
+import gr.hua.dit.nikosgourn.androiddev22023.room.MapsSession;
 
 /**
  * General ContentProvider for the app.
@@ -29,7 +27,7 @@ import gr.hua.dit.nikosgourn.andoiddev22023.room.MapsSession;
  */
 public class GeoPointProvider extends ContentProvider
 {
-    public static final String     AUTHORITY   = "gr.hua.dit.nikosgourn.andoiddev22023";
+    public static final String     AUTHORITY   = "gr.hua.dit.nikosgourn.androiddev22023";
     public static final Uri        CONTENT_URI = Uri.parse("content://" + AUTHORITY);
     
     // region URIs

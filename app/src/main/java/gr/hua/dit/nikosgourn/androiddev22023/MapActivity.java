@@ -1,4 +1,4 @@
-package gr.hua.dit.nikosgourn.andoiddev22023;
+package gr.hua.dit.nikosgourn.androiddev22023;
 
 import android.annotation.SuppressLint;
 import android.app.ActivityManager;
@@ -19,6 +19,7 @@ import androidx.annotation.RequiresApi;
 import androidx.fragment.app.FragmentActivity;
 
 import com.google.android.gms.maps.GoogleMap;
+import com.google.android.gms.maps.MapsInitializer;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.Circle;
@@ -30,9 +31,9 @@ import com.google.android.gms.maps.model.MarkerOptions;
 import java.util.AbstractMap;
 import java.util.ArrayList;
 
-import gr.hua.dit.nikosgourn.andoiddev22023.databinding.ActivityMapBinding;
-import gr.hua.dit.nikosgourn.andoiddev22023.room.GeoPoint;
-import gr.hua.dit.nikosgourn.andoiddev22023.room.MapsSession;
+import gr.hua.dit.nikosgourn.androiddev22023.databinding.ActivityMapBinding;
+import gr.hua.dit.nikosgourn.androiddev22023.room.GeoPoint;
+import gr.hua.dit.nikosgourn.androiddev22023.room.MapsSession;
 
 
 @RequiresApi(api = Build.VERSION_CODES.Q)
@@ -61,6 +62,7 @@ public class MapActivity extends FragmentActivity implements OnMapReadyCallback
     {
         super.onCreate(savedInstanceState);
         points = new ArrayList<>();
+    
         ActivityMapBinding binding = ActivityMapBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
         

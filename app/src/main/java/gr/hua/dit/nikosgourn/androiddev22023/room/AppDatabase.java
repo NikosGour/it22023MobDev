@@ -1,4 +1,4 @@
-package gr.hua.dit.nikosgourn.andoiddev22023.room;
+package gr.hua.dit.nikosgourn.androiddev22023.room;
 
 import androidx.room.Database;
 import androidx.room.RoomDatabase;

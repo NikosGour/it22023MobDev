@@ -1,4 +1,4 @@
-package gr.hua.dit.nikosgourn.andoiddev22023;
+package gr.hua.dit.nikosgourn.androiddev22023;
 
 import org.junit.Test;
 

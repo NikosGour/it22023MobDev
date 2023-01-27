@@ -1,4 +1,4 @@
-package gr.hua.dit.nikosgourn.andoiddev22023;
+package gr.hua.dit.nikosgourn.androiddev22023;
 
 import android.annotation.SuppressLint;
 import android.app.Notification;
@@ -26,9 +26,9 @@ import com.google.android.gms.maps.model.LatLng;
 
 import java.util.ArrayList;
 
-import gr.hua.dit.nikosgourn.andoiddev22023.room.EntranceExitGeoPoint;
-import gr.hua.dit.nikosgourn.andoiddev22023.room.GeoPoint;
-import gr.hua.dit.nikosgourn.andoiddev22023.room.MapsSession;
+import gr.hua.dit.nikosgourn.androiddev22023.room.EntranceExitGeoPoint;
+import gr.hua.dit.nikosgourn.androiddev22023.room.GeoPoint;
+import gr.hua.dit.nikosgourn.androiddev22023.room.MapsSession;
 
 /**
  * Background service that handles location updates.

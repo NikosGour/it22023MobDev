@@ -1,7 +1,4 @@
-package gr.hua.dit.nikosgourn.andoiddev22023;
-
-import androidx.annotation.NonNull;
-import androidx.fragment.app.FragmentActivity;
+package gr.hua.dit.nikosgourn.androiddev22023;
 
 import android.annotation.SuppressLint;
 import android.content.ContentResolver;
@@ -12,7 +9,9 @@ import android.os.Bundle;
 import android.os.Looper;
 import android.widget.Toast;
 
-import com.google.android.gms.maps.CameraUpdateFactory;
+import androidx.annotation.NonNull;
+import androidx.fragment.app.FragmentActivity;
+
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
@@ -22,10 +21,10 @@ import com.google.android.gms.maps.model.CircleOptions;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.MarkerOptions;
 
-import gr.hua.dit.nikosgourn.andoiddev22023.databinding.ActivityResultsMapBinding;
-import gr.hua.dit.nikosgourn.andoiddev22023.room.EntranceExitGeoPoint;
-import gr.hua.dit.nikosgourn.andoiddev22023.room.GeoPoint;
-import gr.hua.dit.nikosgourn.andoiddev22023.room.MapsSession;
+import gr.hua.dit.nikosgourn.androiddev22023.databinding.ActivityResultsMapBinding;
+import gr.hua.dit.nikosgourn.androiddev22023.room.EntranceExitGeoPoint;
+import gr.hua.dit.nikosgourn.androiddev22023.room.GeoPoint;
+import gr.hua.dit.nikosgourn.androiddev22023.room.MapsSession;
 
 @SuppressLint("MissingPermission")
 public class ResultsMapActivity extends FragmentActivity implements OnMapReadyCallback
