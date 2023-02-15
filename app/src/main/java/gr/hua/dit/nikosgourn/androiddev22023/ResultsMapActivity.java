@@ -1,15 +1,21 @@
 package gr.hua.dit.nikosgourn.androiddev22023;
 
 import android.annotation.SuppressLint;
+import android.app.ActivityManager;
 import android.content.ContentResolver;
+import android.content.Context;
+import android.content.Intent;
 import android.database.Cursor;
 import android.graphics.Color;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Looper;
+import android.widget.Button;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.RequiresApi;
 import androidx.fragment.app.FragmentActivity;
 
 import com.google.android.gms.maps.GoogleMap;
@@ -33,6 +39,7 @@ public class ResultsMapActivity extends FragmentActivity implements OnMapReadyCa
     private GoogleMap                 mMap;
     private ContentResolver           contentResolver;
     
+    @RequiresApi(api = Build.VERSION_CODES.Q)
     @Override
     protected void onCreate(Bundle savedInstanceState)
     {
@@ -43,7 +50,25 @@ public class ResultsMapActivity extends FragmentActivity implements OnMapReadyCa
         setContentView(binding.getRoot());
         
         contentResolver = getContentResolver();
+    
+        Button stop_restart_button = findViewById(R.id.stop_restart_button);
+        Button main_menu_button = findViewById(R.id.main_menu_button);
         
+        stop_restart_button.setOnClickListener(v -> {
+            if (isLocationServiceRunning())
+            {
+                stopService(new Intent(this , LocationService.class));
+                Toast.makeText(this , "Service Stopped" , Toast.LENGTH_SHORT).show();
+            }
+            else
+            {
+                startForegroundService(new Intent(this , LocationService.class));
+                Toast.makeText(this , "Service Started" , Toast.LENGTH_SHORT).show();
+            }
+            
+        });
+        
+        main_menu_button.setOnClickListener(v -> finish());
         
         SupportMapFragment mapFragment =
                 (SupportMapFragment) getSupportFragmentManager().findFragmentById(R.id.map);
@@ -181,5 +206,19 @@ public class ResultsMapActivity extends FragmentActivity implements OnMapReadyCa
         float[] hsv = new float[3];
         Color.colorToHSV(Color.parseColor(color), hsv);
         return BitmapDescriptorFactory.defaultMarker(hsv[0]);
+    }
+    
+    @RequiresApi(api = Build.VERSION_CODES.Q)
+    private boolean isLocationServiceRunning()
+    {
+        ActivityManager manager = (ActivityManager) getSystemService(Context.ACTIVITY_SERVICE);
+        for (ActivityManager.RunningServiceInfo service : manager.getRunningServices(Integer.MAX_VALUE))
+        {
+            if (LocationService.class.getName().equals(service.service.getClassName()))
+            {
+                return true;
+            }
+        }
+        return false;
     }
 }
