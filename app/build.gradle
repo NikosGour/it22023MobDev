@@ -5,7 +5,7 @@ plugins {
 
 android {
     namespace 'gr.hua.dit.nikosgourn.androiddev22023'
-    compileSdk 33
+    compileSdk 34
 
     defaultConfig {
         applicationId "gr.hua.dit.nikosgourn.androiddev22023"
@@ -24,8 +24,8 @@ android {
         }
     }
     compileOptions {
-        sourceCompatibility JavaVersion.VERSION_11
-        targetCompatibility JavaVersion.VERSION_11
+        sourceCompatibility JavaVersion.VERSION_21
+        targetCompatibility JavaVersion.VERSION_21
     }
     buildFeatures {
         viewBinding true
@@ -35,7 +35,7 @@ android {
 dependencies {
 
     implementation 'androidx.appcompat:appcompat:1.6.0'
-    implementation 'com.google.android.material:material:1.8.0'
+    implementation 'com.google.android.material:material:1.11.0'
     implementation 'androidx.constraintlayout:constraintlayout:2.1.4'
     implementation 'com.google.android.gms:play-services-maps:18.1.0'
     implementation 'com.google.android.gms:play-services-location:21.0.1'
